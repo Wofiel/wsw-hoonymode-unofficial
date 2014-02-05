@@ -33,8 +33,8 @@ int prcYesIcon;
 int prcShockIcon;
 int prcShellIcon;
 
-cEntity @alphaSpawn;
-cEntity @betaSpawn;
+Entity @alphaSpawn;
+Entity @betaSpawn;
 
 //The idea for the state logic is basically just pinched from DA.
 const int HOONII_ROUNDSTATE_NONE = 0;
@@ -69,8 +69,8 @@ class cHoonyRound
     uint roundStateStartTime;
     uint roundStateEndTime;
     int countDown;
-    cEntity @alphaSpawn;
-    cEntity @betaSpawn;
+    Entity @alphaSpawn;
+    Entity @betaSpawn;
 
     cHoonyRound()
     {
@@ -114,8 +114,8 @@ class cHoonyRound
 
         // clear scores
 
-        cEntity @ent;
-        cTeam @team;
+        Entity @ent;
+        Team @team;
 
         for ( int i = TEAM_PLAYERS; i < GS_MAX_TEAMS; i++ )
         {
@@ -223,7 +223,7 @@ class cHoonyRound
                 // first(?) spawn point in any maps.
 
                 //CreateSpawnIndicators( "info_player_deathmatch", TEAM_PLAYERS );
-                HoonyCreateIndicators("info_player_deathmatch", TEAM_PLAYERS);
+                SpawnIndicators::Create("info_player_deathmatch", TEAM_PLAYERS);
                 //G_Print("STATE: HOONII_ROUNDSTATE_PICK\n");
                 G_CenterPrintMsg( null, S_COLOR_WHITE+'Pick spawn positions with the menu or'
                                        +S_COLOR_ORANGE+' /pick\n'
@@ -246,7 +246,7 @@ class cHoonyRound
                 this.roundStateEndTime = levelTime + 5000;
                 this.countDown = 5;
                 gametype.shootingDisabled = true;
-                DeleteSpawnIndicators();
+                SpawnIndicators::Delete();
                 break;
             }
 
@@ -335,7 +335,7 @@ class cHoonyRound
                 gametype.shootingDisabled = true;
                 //for ( int team = TEAM_PLAYERS; team < GS_MAX_TEAMS; team++ )
                     //gametype.setTeamSpawnsystem( team, SPAWNSYSTEM_HOLD, 0, 0, true );
-                //DeleteSpawnIndicators();
+                //SpawnIndicators::Delete();
                 break;
             }
             case HOONII_ROUNDSTATE_RESPAWNROUND2:
@@ -363,7 +363,7 @@ class cHoonyRound
             case HOONII_ROUNDSTATE_ROUNDFINISHED2:
             {
                 //G_Print("STATE: HOONII_ROUNDSTATE_ROUNDFINISHED2\n");
-                cEntity @ent;
+                Entity @ent;
                 int i=0;
                 Cvar scoreLimit( "g_scorelimit", "", 0 );
                 this.roundStateEndTime = levelTime + 2500;
@@ -414,7 +414,7 @@ class cHoonyRound
             //Basically invuln, though can still telefrag.
             //Do it this way so we can still GB jump around and 
             //get to all the important spawns reasonably quick
-            cEntity @ent;
+            Entity @ent;
             for ( int i = 0; i < maxClients; i++ )
             {
                 @ent = @G_GetClient( i ).getEnt();
@@ -449,7 +449,7 @@ class cHoonyRound
             || this.state == HOONII_ROUNDSTATE_RESPAWNROUND2 
             || this.state == HOONII_ROUNDSTATE_ROUNDFINISHED2)
         {
-            cEntity @ent;
+            Entity @ent;
             for ( int i = 0; i < maxClients; i++ )
             {
                 @ent = @G_GetClient( i ).getEnt();
@@ -498,7 +498,7 @@ class cHoonyRound
         {
             int count = 0;
 
-            cEntity @ent;
+            Entity @ent;
             for ( int i = 0; i < maxClients; i++ )
             {
                 @ent = @G_GetClient( i ).getEnt();
@@ -510,7 +510,7 @@ class cHoonyRound
         }
     }
 
-    void playerKilled(cEntity @target, cEntity @attacker, cEntity @inflicter)
+    void playerKilled(Entity @target, Entity @attacker, Entity @inflicter)
     {
         if(this.state != HOONII_ROUNDSTATE_ROUND && this.state != HOONII_ROUNDSTATE_ROUND2)
             return;
@@ -534,8 +534,8 @@ class cHoonyRound
         //I'm not sure if I should do all this in playerkilled or make a new post-round to check
         if(this.state == HOONII_ROUNDSTATE_ROUND2)
         {
-            cEntity @winner = null;
-            cEntity @loser = null;
+            Entity @winner = null;
+            Entity @loser = null;
             int soundIndex;
             
             @loser = target;
@@ -556,7 +556,7 @@ class cHoonyRound
             {
                 //G_Print(""+winner.client.name+" WINS THE ROUND!");
                 winner.client.stats.addScore( 1 );
-                cTeam @winteam = G_GetTeam(winner.team);
+                Team @winteam = G_GetTeam(winner.team);
                 winteam.stats.addScore( 1 );
 
                 soundIndex = G_SoundIndex( "sounds/announcer/ctf/score0" + int( brandom( 1, 2 ) ) );
@@ -598,7 +598,7 @@ void HOONII_SetUpWarmup()
 /// MODULE SCRIPT CALLS
 ///*****************************************************************
 
-bool GT_Command( cClient @client, String &cmdString, String &argsString, int argc )
+bool GT_Command( Client @client, const String &cmdString, const String &argsString, int argc )
 {
     if ( cmdString == "cvarinfo" )
     {
@@ -840,7 +840,7 @@ void toggleReady(int team)
 
 void swapPlayerSpawns()
 {
-    cEntity @temp;
+    Entity @temp;
     @temp = @alphaSpawn;
     @alphaSpawn = @betaSpawn;
     @betaSpawn = @temp;
@@ -854,8 +854,8 @@ void swapPlayerSpawns()
 
 void respawnPlayers(bool respawn)
 {
-    cEntity @ent;
-    cTeam @team;
+    Entity @ent;
+    Team @team;
     for (int i = TEAM_PLAYERS; i < GS_MAX_TEAMS; i++ )
     {
         @team = @G_GetTeam( i );
@@ -876,40 +876,6 @@ void respawnPlayers(bool respawn)
     }
 }
 
-void HoonyCreateIndicators( String &className, int team )
-{
-    cEntity @spawn;
-    int numSpawns;
-    cSpawnpoint @indicator = null;
-    
-    // count spawns for allocating the array
-    @spawn = @G_FindEntityWithClassname( null, className );
-    numSpawns = 0;
-    while (@spawn != null)
-    {
-        @indicator = null;
-        
-        for ( int i = 0; i < MAX_INDICATORS; i++ )
-        {
-            if ( gtSpawnpoints[i].inuse == false )
-            {
-                @indicator = @gtSpawnpoints[i];
-                break;
-            }
-        }
-
-        if ( @indicator == null )
-        {
-            G_Print( "CreateSpawnIndicators: MAX_INDICATORS reached. Can't create spawn indicator.\n" );
-            return;
-        }
-        
-        indicator.CreateDecal( spawn, team );
-        @spawn = @G_FindEntityWithClassname( spawn, className );
-        numSpawns++;
-    }   
-}
-
 // Probably shouldn't keep recreating the spawnpoint array every time someone randoms or picks...
 // A general pick with a boolean makes sense.
 // Better yet creating it once on round start and using for the round with re-creating
@@ -917,112 +883,43 @@ void HoonyCreateIndicators( String &className, int team )
 
 // Theoretically the while(alphaSpawn!=betaSpawn){random} could cause a lock 
 // but the chances it happens for any significant period are not high.
-cEntity @PickTrueRandomSpawnPoint()
+Entity @PickTrueRandomSpawnPoint()
 {
-    cEntity @spawn;
-    int numSpawns = 0;
-
-    @spawn = @G_FindEntityWithClassname( null, "info_player_deathmatch" );
-    while ( @spawn != null )
-    {
-        numSpawns++;
-        @spawn = @G_FindEntityWithClassname( spawn, "info_player_deathmatch" );
-    }
-
+	array<Entity @> @spawnents = G_FindByClassname( "info_player_deathmatch" );
+	uint numSpawns = spawnents.size();
     if ( numSpawns == 0 )
         return null;
-    if ( numSpawns == 1 )
-        return G_FindEntityWithClassname( null, "info_player_deathmatch" );
-
-    cSpawnPoint[] spawns( numSpawns );
-
-    for( int i = 0; i < numSpawns; i++ )
-    {
-        @spawn = @G_FindEntityWithClassname( spawn, "info_player_deathmatch" );
-        @spawns[i].ent = @spawn;
-    }
-    //int choice = int( brandom( 1, numSpawns ));
-    return spawns[int( brandom( 1, numSpawns ))].ent;
+	return @spawnents[int( brandom( 0, numSpawns - 1 ))];
 }
 
-cEntity @GetClosestSpawnPoint( cEntity @self )
+Entity @GetClosestSpawnPoint( Entity @self )
 {
-    cEntity @spawn;
-
-    @spawn = @G_FindEntityWithClassname( null, "info_player_deathmatch" );
-    int numSpawns = 0;
-    cTeam @enemyTeam;
-
-    while ( @spawn != null )
-    {
-        numSpawns++;
-        @spawn = @G_FindEntityWithClassname( spawn, "info_player_deathmatch" );
-    }
+	array<Entity @> @spawnents = G_FindByClassname( "info_player_deathmatch" );
+	uint numSpawns = spawnents.size();
 
     if ( numSpawns == 0 )
         return null;
     if ( numSpawns == 1 )
-        return  G_FindEntityWithClassname( null, "info_player_deathmatch" );
-
-    cSpawnPoint[] spawns( numSpawns );
-
-
-    if ( @self != null )
-    {
-        if ( self.team == TEAM_ALPHA )
-            @enemyTeam = @G_GetTeam( TEAM_BETA );
-        else if ( self.team == TEAM_BETA )
-            @enemyTeam = @G_GetTeam( TEAM_ALPHA );
-        else
-            @enemyTeam = @G_GetTeam( TEAM_PLAYERS );
-    }
-    else
-    {
-        @enemyTeam = null;
-    }
-
-    @spawn = @G_FindEntityWithClassname( null, "info_player_deathmatch" );
+        return @spawnents[0];
 
     // Get spawn points
     int pos = 0; // Current position
-    int closest = 999999;
+    float closest = 999999;
     int pick = 0;
-    int dist = 0;
+    float dist = 0;
 
     //fill array with points
-    while ( @spawn != null )
+    for( uint i = 0; i < numSpawns; i++ )
     {
-        //G_PrintMsg(self, vec3ToString(spawn.origin)+"\n");
-        // only accept those of the same team
-        if (  self.team != TEAM_SPECTATOR )
-        {
-            if ( spawn.team != self.team )
-            {
-                //@spawn = @G_FindEntityWithClassname( spawn, "info_player_deathmatch" );
-                //continue;
-            }
-        }
-        //G_PrintMsg(self, vec3ToString(spawn.origin)+"\n");
-        
-        dist = int(self.origin.distance(spawn.origin));
-        //dist = int(ent.origin.distance(spawns[pos].get_origin()));
-        if(dist < closest)
-        {
+		Entity @spawn = @spawnents[i];
+        dist = self.origin.distance(spawn.origin);
+        if(dist < closest) {
             closest = dist;
-            pick = pos;
+            pick = i;
         }
-
-        // Save current spawn point
-        @spawns[pos].ent = @spawn;
-        
-        // Go forward reading next respawn point
-        pos++;
-        
-        @spawn = @G_FindEntityWithClassname( spawn, "info_player_deathmatch" );
     }
     
-    //G_PrintMsg(self, "Closest spawn is: "+vec3ToString(spawns[pick].ent.origin));
-    return @spawns[pick].ent;
+    return @spawnents[pick];
 }
 
 // When this function is called the weights of items have been reset to their default values,
@@ -1030,13 +927,13 @@ cEntity @GetClosestSpawnPoint( cEntity @self )
 // on the current bot status.
 // Player, and non-item entities don't have any weight set. So they will be ignored by the bot
 // unless a weight is assigned here.
-bool GT_UpdateBotStatus( cEntity @ent )
+bool GT_UpdateBotStatus( Entity @ent )
 {
     return GENERIC_UpdateBotStatus( ent );
 }
 
 // select a spawning point for a player
-cEntity @GT_SelectSpawnPoint( cEntity @self )
+Entity @GT_SelectSpawnPoint( Entity @self )
 {
     //simple bypass of the generic to use the chosen spawns
     if(hoonyRound.state == HOONII_ROUNDSTATE_ROUND 
@@ -1056,8 +953,8 @@ String @GT_ScoreboardMessage( uint maxlen )
 {
     String scoreboardMessage = "";
     String entry;
-    cTeam @team;
-    cEntity @ent;
+    Team @team;
+    Entity @ent;
     int i, t, readyIcon;
 
     for ( t = TEAM_ALPHA; t < GS_MAX_TEAMS; t++ )
@@ -1111,14 +1008,14 @@ String @GT_ScoreboardMessage( uint maxlen )
 // Some game actions trigger score events. These are events not related to killing
 // oponents, like capturing a flag
 // Warning: client can be null
-void GT_scoreEvent( cClient @client, String &score_event, String &args )
+void GT_ScoreEvent( Client @client, const String &score_event, const String &args )
 {
     if ( score_event == "dmg" )
     {
     }
     else if ( score_event == "kill" )
     {
-        cEntity @attacker = null;
+        Entity @attacker = null;
 
         if ( @client != null )
             @attacker = @client.getEnt();
@@ -1136,7 +1033,7 @@ void GT_scoreEvent( cClient @client, String &score_event, String &args )
 
 // a player is being respawned. This can happen from several ways, as dying, changing team,
 // being moved to ghost state, be placed in respawn queue, being spawned from spawn queue, etc
-void GT_playerRespawn( cEntity @ent, int old_team, int new_team )
+void GT_PlayerRespawn( Entity @ent, int old_team, int new_team )
 {
     // rename the team to the player name
     if ( old_team != new_team )
@@ -1154,8 +1051,8 @@ void GT_playerRespawn( cEntity @ent, int old_team, int new_team )
     }
     else
     {
-        cItem @item;
-        cItem @ammoItem;
+        Item @item;
+        Item @ammoItem;
 
         // the gunblade can't be given (because it can't be dropped)
         ent.client.inventorySetCount( WEAP_GUNBLADE, 1 );
@@ -1225,7 +1122,7 @@ void GT_ThinkRules()
     // check maxHealth rule and max armor rule
     for ( int i = 0; i < maxClients; i++ )
     {
-        cEntity @ent = @G_GetClient( i ).getEnt();
+        Entity @ent = @G_GetClient( i ).getEnt();
         if ( ent.client.state() >= CS_SPAWNED && ent.team != TEAM_SPECTATOR )
         {
             if ( ent.health > ent.maxHealth )
@@ -1263,7 +1160,7 @@ bool GT_MatchStateFinished( int incomingMatchState )
     // check maxHealth rule
     for ( int i = 0; i < maxClients; i++ )
     {
-        cEntity @ent = @G_GetClient( i ).getEnt();
+        Entity @ent = @G_GetClient( i ).getEnt();
         if ( ent.client.state() >= CS_SPAWNED && ent.team != TEAM_SPECTATOR )
         {
             if ( ent.health > ent.maxHealth )
@@ -1287,15 +1184,15 @@ void GT_MatchStateStarted()
         //GENERIC_SetUpWarmup();
         //CreateSpawnIndicators( "info_player_deathmatch", TEAM_PLAYERS );
         //CreateSpawnIndicators( "info_player_start", TEAM_PLAYERS ); // Some maps use this
-        HoonyCreateIndicators("info_player_deathmatch", TEAM_PLAYERS);
-        HoonyCreateIndicators("info_player_start", TEAM_PLAYERS);
+        SpawnIndicators::Create("info_player_deathmatch", TEAM_PLAYERS);
+        SpawnIndicators::Create("info_player_start", TEAM_PLAYERS);
         break;
 
     case MATCH_STATE_COUNTDOWN:
         gametype.pickableItemsMask = 0; // disallow item pickup
         gametype.dropableItemsMask = 0; // disallow item drop
         GENERIC_SetUpCountdown();
-        DeleteSpawnIndicators();
+        SpawnIndicators::Delete();
         break;
 
     case MATCH_STATE_PLAYTIME:
