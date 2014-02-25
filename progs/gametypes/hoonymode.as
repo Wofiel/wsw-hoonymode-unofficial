@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
  ** hoonymode.as by iim a.k.a. iimosaurus (Matthew Sanders)
  **     Need help? Find me at #warsow.au @QuakeNet
- ** Date: 19/01/2014
+ ** Date: 25/02/2014
  **
  ** Notes: Original hoonymode requires a 2-point lead, but with Warsow 
  **        being less lethal, I'm choosing to forgo that and just make it first to 3
@@ -108,11 +108,6 @@ class cHoonyRound
         //INSTANT SPAWN WHILE PICKING
         for ( int team = TEAM_PLAYERS; team < GS_MAX_TEAMS; team++ )
             gametype.setTeamSpawnsystem( team, SPAWNSYSTEM_INSTANT, 0, 0, true );
-
-
-        // set spawnsystem type to not respawn the players when they die
-
-        // clear scores
 
         Entity @ent;
         Team @team;
@@ -216,13 +211,6 @@ class cHoonyRound
             
             case HOONII_ROUNDSTATE_PICK:
             {
-                // There's something incorrect with 
-                // the CreateSpawnIndicators function.
-
-                // It does not seem to give a model to the 
-                // first(?) spawn point in any maps.
-
-                //CreateSpawnIndicators( "info_player_deathmatch", TEAM_PLAYERS );
                 SpawnIndicators::Create("info_player_deathmatch", TEAM_PLAYERS);
                 //G_Print("STATE: HOONII_ROUNDSTATE_PICK\n");
                 G_CenterPrintMsg( null, S_COLOR_WHITE+'Pick spawn positions with the menu or'
@@ -233,9 +221,6 @@ class cHoonyRound
                 gametype.shootingDisabled = false;
                 gametype.pickableItemsMask = 0;
                 gametype.countdownEnabled = false;
-
-                //respawnPlayers(false);
-                //G_Items_RespawnByType( 0, 0, 0 );
 
                 break;
             }
@@ -1182,8 +1167,6 @@ void GT_MatchStateStarted()
         gametype.dropableItemsMask = gametype.spawnableItemsMask;
         HOONII_SetUpWarmup();
         //GENERIC_SetUpWarmup();
-        //CreateSpawnIndicators( "info_player_deathmatch", TEAM_PLAYERS );
-        //CreateSpawnIndicators( "info_player_start", TEAM_PLAYERS ); // Some maps use this
         SpawnIndicators::Create("info_player_deathmatch", TEAM_PLAYERS);
         SpawnIndicators::Create("info_player_start", TEAM_PLAYERS);
         break;
@@ -1196,8 +1179,6 @@ void GT_MatchStateStarted()
         break;
 
     case MATCH_STATE_PLAYTIME:
-        //gametype.pickableItemsMask = gametype.spawnableItemsMask;
-        //gametype.dropableItemsMask = gametype.spawnableItemsMask;
         hoonyRound.newGame();
         break;
 
@@ -1231,7 +1212,7 @@ void GT_SpawnGametype()
 void GT_InitGametype()
 {
     gametype.title = "Hoonymode";
-    gametype.version = "0.1.2";
+    gametype.version = "0.1.3";
     gametype.author = "^6iim^2osaurus";
 
     hoonyRound.init();
